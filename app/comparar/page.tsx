@@ -48,7 +48,9 @@ export default function CompararPage() {
       <div className="max-w-4xl mx-auto px-4 py-8">
         <div className="flex items-center gap-3 mb-8">
           <a href="/" className="text-gray-400 hover:text-gray-600 text-sm transition-colors">← Início</a>
-          <h1 className="text-2xl font-bold text-gray-900">
+          <span className="text-gray-200">|</span>
+          <a href="/monitoramento" className="text-blue-500 hover:text-blue-400 text-sm transition-colors">🔔 Monitoramento</a>
+          <h1 className="text-2xl font-bold text-gray-900 ml-auto">
             Trust<span className="text-blue-500">Check</span>
             <span className="text-gray-400 font-normal text-lg ml-2">— Comparar</span>
           </h1>

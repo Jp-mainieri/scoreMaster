@@ -195,6 +195,10 @@ export default function ResultadoPage() {
           <a href="/comparar" className="text-blue-500 hover:text-blue-400 transition-colors text-sm">
             Comparar com outra empresa
           </a>
+          <span className="text-gray-200">|</span>
+          <a href="/monitoramento" className="text-blue-500 hover:text-blue-400 transition-colors text-sm">
+            🔔 Monitoramento
+          </a>
         </div>
 
         {/* Score principal */}

@@ -89,10 +89,14 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Compare link */}
-        <div className="text-center mt-6">
+        {/* Navigation links */}
+        <div className="text-center mt-6 flex items-center justify-center gap-4">
           <a href="/comparar" className="text-blue-400 hover:text-blue-300 text-sm transition-colors">
-            Comparar duas empresas →
+            ⚖️ Comparar empresas
+          </a>
+          <span className="text-gray-700">|</span>
+          <a href="/monitoramento" className="text-blue-400 hover:text-blue-300 text-sm transition-colors">
+            🔔 Monitoramento
           </a>
         </div>
       </div>

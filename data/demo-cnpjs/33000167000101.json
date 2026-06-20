@@ -1,0 +1,32 @@
+{
+  "status": "completo",
+  "resultado": {
+    "score_final": 87,
+    "classificacao_risco": "baixo",
+    "confianca": 92,
+    "socios_analisados": [
+      {
+        "nome": "PETRÓLEO BRASILEIRO S.A.",
+        "padrao": "investidor_diversificado",
+        "score_individual": 88,
+        "empresas_na_rede": 3,
+        "sinais_detectados": ["empresa estatal", "capital elevado", "subsidiárias reguladas"],
+        "justificativa": "Estrutura societária típica de holding estatal com subsidiárias bem definidas e reguladas. Histórico operacional extenso com alta capacidade de honrar contratos. Sem padrões de risco identificados."
+      }
+    ],
+    "hipotese_principal": "Empresa de capital misto com governança robusta e histórico operacional sólido de mais de 70 anos.",
+    "recomendacao": "Empresa confiável para contratação. Recomenda-se verificar apenas os prazos de pagamento contratuais — empresas estatais podem ter ciclos mais longos.",
+    "perguntas_desambiguacao": [],
+    "bloqueadores": []
+  },
+  "meta": {
+    "cnpj": "33000167000101",
+    "razao_social": "PETRÓLEO BRASILEIRO S.A. - PETROBRAS",
+    "cnae": "Extração de petróleo e gás natural",
+    "situacao": "Ativa",
+    "socios_count": 2,
+    "processos_count": 2,
+    "sancoes_count": 0,
+    "contratos_count": 15
+  }
+}

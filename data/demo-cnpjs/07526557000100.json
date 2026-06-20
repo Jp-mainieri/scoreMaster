@@ -1,0 +1,47 @@
+{
+  "status": "completo",
+  "resultado": {
+    "score_final": 41,
+    "classificacao_risco": "medio_alto",
+    "confianca": 74,
+    "socios_analisados": [
+      {
+        "nome": "ROBERTO ALVES COSTA",
+        "padrao": "empresa_passagem",
+        "score_individual": 28,
+        "empresas_na_rede": 4,
+        "sinais_detectados": [
+          "3 empresas baixadas nos últimos 4 anos",
+          "capital social mínimo (R$ 1.000)",
+          "CNAEs incompatíveis",
+          "ciclos de vida < 18 meses"
+        ],
+        "justificativa": "Sócio com histórico de abrir e fechar empresas em ciclos curtos com capital mínimo. Padrão consistente com uso de empresas como passagem para prestação de serviços sem solidez patrimonial. Alto risco de inadimplência contratual."
+      },
+      {
+        "nome": "PATRICIA GOMES FERREIRA",
+        "padrao": "perfil_limpo",
+        "score_individual": 72,
+        "empresas_na_rede": 1,
+        "sinais_detectados": ["participação recente", "sócia minoritária"],
+        "justificativa": "Perfil sem histórico problemático. Entrada recente na sociedade como sócia minoritária não levanta alertas por si só."
+      }
+    ],
+    "hipotese_principal": "Empresa com sócio majoritário apresentando padrão de empresa-passagem, com histórico de abrir/fechar CNPJs com capital mínimo.",
+    "recomendacao": "Solicite balanços dos últimos 2 anos e garantias contratuais antes de fechar. Evite pagamentos antecipados superiores a 20% do contrato. Exija caução ou seguro-garantia para contratos acima de R$ 50 mil.",
+    "perguntas_desambiguacao": [],
+    "bloqueadores": [
+      "Sócio majoritário com 3 empresas baixadas nos últimos 4 anos"
+    ]
+  },
+  "meta": {
+    "cnpj": "07526557000100",
+    "razao_social": "RC SERVICOS E COMERCIO LTDA",
+    "cnae": "Serviços especializados para construção",
+    "situacao": "Ativa",
+    "socios_count": 2,
+    "processos_count": 2,
+    "sancoes_count": 0,
+    "contratos_count": 0
+  }
+}

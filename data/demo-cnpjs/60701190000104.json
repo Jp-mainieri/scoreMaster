@@ -1,0 +1,32 @@
+{
+  "status": "completo",
+  "resultado": {
+    "score_final": 82,
+    "classificacao_risco": "baixo",
+    "confianca": 95,
+    "socios_analisados": [
+      {
+        "nome": "FUNDAÇÃO BRADESCO",
+        "padrao": "investidor_diversificado",
+        "score_individual": 85,
+        "empresas_na_rede": 8,
+        "sinais_detectados": ["holding financeira", "participações reguladas pelo Banco Central", "histórico limpo"],
+        "justificativa": "Estrutura de holding financeira típica, com participações em múltiplas subsidiárias reguladas pelo Banco Central. Todas as empresas da rede estão ativas e possuem capitais sociais elevados. Padrão consistente com instituição financeira de grande porte."
+      }
+    ],
+    "hipotese_principal": "Grupo financeiro de grande porte com estrutura societária regulada e transparente.",
+    "recomendacao": "Contratação recomendada. A solidez financeira e a regulação pelo Banco Central conferem alta previsibilidade contratual.",
+    "perguntas_desambiguacao": [],
+    "bloqueadores": []
+  },
+  "meta": {
+    "cnpj": "60701190000104",
+    "razao_social": "BANCO BRADESCO S.A.",
+    "cnae": "Banco múltiplo, com carteira comercial",
+    "situacao": "Ativa",
+    "socios_count": 3,
+    "processos_count": 2,
+    "sancoes_count": 0,
+    "contratos_count": 8
+  }
+}

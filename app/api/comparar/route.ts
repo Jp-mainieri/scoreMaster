@@ -75,13 +75,10 @@ async function buildScore(
     contratos_valor: contratosValor,
   };
 
-  const response = await analisarPerfilSocietario(ctx);
-  if (response.status !== 'completo' || !response.resultado) {
-    throw new Error('Score inconclusivo para comparação');
-  }
+  const resultado = await analisarPerfilSocietario(ctx);
 
   return {
-    resultado: response.resultado,
+    resultado,
     meta: {
       cnpj: clean,
       razao_social: empresa.company.name,

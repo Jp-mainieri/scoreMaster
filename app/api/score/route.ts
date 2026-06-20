@@ -4,6 +4,7 @@ import { consultarCEIS, consultarCNEP } from '@/lib/cgu';
 import { consultarContratos } from '@/lib/transparencia';
 import { buscarEmpresasDeSocio, normalizarNome, upsertSituacao } from '@/lib/database';
 import { analisarPerfilSocietario, ScoreContext, SocioComRede } from '@/lib/claude';
+import { avaliarPilares } from '@/lib/pilares';
 import fs from 'fs';
 import path from 'path';
 
@@ -96,10 +97,12 @@ export async function GET(req: NextRequest) {
       contratos_valor: contratosValor,
     };
 
-    const scoreResponse = await analisarPerfilSocietario(ctx);
+    const resultado = await analisarPerfilSocietario(ctx);
+    const pilares = avaliarPilares(ctx, resultado);
 
     return NextResponse.json({
-      ...scoreResponse,
+      resultado,
+      pilares,
       meta: {
         cnpj: clean,
         razao_social: empresa.company.name,

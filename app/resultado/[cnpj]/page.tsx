@@ -6,6 +6,7 @@ import ScoreCard from '@/components/ScoreCard';
 import SocioCard from '@/components/SocioCard';
 import LoadingSteps from '@/components/LoadingSteps';
 import RecomendacaoIA from '@/components/RecomendacaoIA';
+import ChecklistPilares from '@/components/ChecklistPilares';
 
 interface ScoreResult {
   score_final: number;
@@ -21,15 +22,19 @@ interface ScoreResult {
   }>;
   hipotese_principal: string;
   recomendacao: string;
-  perguntas_desambiguacao: string[];
   bloqueadores: string[];
 }
 
+interface PilarChecklistItem {
+  pilar: string;
+  nome: string;
+  status: 'positivo' | 'atencao' | 'negativo';
+  motivo: string;
+}
+
 interface ApiResponse {
-  status: 'completo' | 'pendente_resposta';
   resultado?: ScoreResult;
-  perguntas?: string[];
-  contexto?: unknown;
+  pilares?: PilarChecklistItem[];
   meta?: {
     cnpj: string;
     razao_social: string;
@@ -52,9 +57,6 @@ export default function ResultadoPage() {
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<ApiResponse | null>(null);
   const [error, setError] = useState('');
-  const [respostas, setRespostas] = useState<string[]>([]);
-  const [inputRespostas, setInputRespostas] = useState<string[]>([]);
-  const [respondendo, setRespondendo] = useState(false);
 
   useEffect(() => {
     const timers = STEP_TIMINGS.map((delay, i) =>
@@ -75,33 +77,6 @@ export default function ResultadoPage() {
     } finally {
       setLoading(false);
     }
-  }
-
-  async function enviarRespostas(respostas: string[]) {
-    if (!data?.contexto) return;
-    setRespondendo(true);
-    try {
-      const res = await fetch('/api/score/responder', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contexto: data.contexto, respostas }),
-      });
-      const json: ApiResponse = await res.json();
-      setData(json);
-      if (json.error) setError(json.error);
-    } catch {
-      setError('Erro ao processar respostas.');
-    } finally {
-      setRespondendo(false);
-    }
-  }
-
-  function responderPerguntas() {
-    return enviarRespostas(inputRespostas);
-  }
-
-  function pularPerguntas() {
-    return enviarRespostas(['Usuário optou por não fornecer informações adicionais — finalize com os dados disponíveis.']);
   }
 
   if (loading) {
@@ -135,60 +110,8 @@ export default function ResultadoPage() {
     );
   }
 
-  // Pending disambiguation questions
-  if (data?.status === 'pendente_resposta' && data.perguntas && !respondendo) {
-    return (
-      <main className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
-        <div className="w-full max-w-lg">
-          <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
-            <div className="flex items-center gap-2 mb-4">
-              <span className="text-xl">🤔</span>
-              <h2 className="font-bold text-gray-900">Preciso de mais informações</h2>
-            </div>
-            <p className="text-sm text-gray-500 mb-5">
-              Para aumentar a precisão da análise, responda:
-            </p>
-            <div className="flex flex-col gap-4">
-              {data.perguntas.map((pergunta, i) => (
-                <div key={i}>
-                  <label className="text-sm font-medium text-gray-700 mb-1.5 block">
-                    {i + 1}. {pergunta}
-                  </label>
-                  <input
-                    type="text"
-                    value={inputRespostas[i] ?? ''}
-                    onChange={(e) => {
-                      const updated = [...inputRespostas];
-                      updated[i] = e.target.value;
-                      setInputRespostas(updated);
-                    }}
-                    className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-900 outline-none focus:ring-2 focus:ring-blue-300"
-                    placeholder="Sua resposta..."
-                  />
-                </div>
-              ))}
-            </div>
-            <div className="mt-5 flex gap-3">
-              <button
-                onClick={responderPerguntas}
-                className="flex-1 bg-blue-500 hover:bg-blue-400 text-white font-semibold py-2.5 rounded-xl text-sm transition-colors"
-              >
-                Analisar com contexto
-              </button>
-              <button
-                onClick={pularPerguntas}
-                className="text-gray-500 hover:text-gray-700 text-sm px-4"
-              >
-                Pular
-              </button>
-            </div>
-          </div>
-        </div>
-      </main>
-    );
-  }
-
   const resultado = data?.resultado;
+  const pilares = data?.pilares;
   const meta = data?.meta;
 
   if (!resultado) return null;
@@ -232,6 +155,13 @@ export default function ResultadoPage() {
                 <p className="text-xs text-gray-500 mt-0.5">{m.label}</p>
               </div>
             ))}
+          </div>
+        )}
+
+        {/* Checklist por pilar */}
+        {pilares && pilares.length > 0 && (
+          <div className="mb-6">
+            <ChecklistPilares pilares={pilares} />
           </div>
         )}
 

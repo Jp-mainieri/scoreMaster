@@ -1,7 +1,21 @@
 import Groq from 'groq-sdk';
+import type { ChatCompletionCreateParamsNonStreaming } from 'groq-sdk/resources/chat/completions';
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
-const MODEL = 'llama-3.3-70b-versatile';
+const MODEL_PRIMARY = 'llama-3.3-70b-versatile';
+const MODEL_FALLBACK = 'llama-3.1-8b-instant';
+
+async function chatCompletion(params: Omit<ChatCompletionCreateParamsNonStreaming, 'model'>) {
+  try {
+    return await groq.chat.completions.create({ ...params, model: MODEL_PRIMARY });
+  } catch (err) {
+    const status = (err as { status?: number })?.status;
+    if (status === 429) {
+      return await groq.chat.completions.create({ ...params, model: MODEL_FALLBACK });
+    }
+    throw err;
+  }
+}
 
 export interface SocioComRede {
   nome: string;
@@ -34,7 +48,6 @@ export interface ScoreContext {
   sancoes: string;
   contratos_count: number;
   contratos_valor: number;
-  respostas_adicionais?: string;
 }
 
 export interface ScoreResult {
@@ -51,15 +64,7 @@ export interface ScoreResult {
   }>;
   hipotese_principal: string;
   recomendacao: string;
-  perguntas_desambiguacao: string[];
   bloqueadores: string[];
-}
-
-export interface ScoreResponse {
-  status: 'completo' | 'pendente_resposta';
-  resultado?: ScoreResult;
-  perguntas?: string[];
-  contexto?: ScoreContext;
 }
 
 function buildPrompt(ctx: ScoreContext): string {
@@ -74,7 +79,6 @@ ${JSON.stringify(ctx.socios_com_redes, null, 2)}
 DADOS ADICIONAIS:
 - Sanções CEIS/CNEP: ${ctx.sancoes}
 - Contratos públicos firmados: ${ctx.contratos_count} (valor total: R$ ${ctx.contratos_valor.toLocaleString('pt-BR')})
-${ctx.respostas_adicionais ? `- Informações adicionais fornecidas: ${ctx.respostas_adicionais}` : ''}
 
 INSTRUÇÕES:
 1. Analise o padrão societário de CADA sócio considerando: número de empresas simultâneas, setores (CNAEs), situações cadastrais das empresas da rede, empresas com situação especial (falência/recuperação), capital social, datas de entrada/saída, endereços compartilhados.
@@ -85,7 +89,7 @@ INSTRUÇÕES:
    - "concentracao_serial": >7 empresas simultâneas, CNAEs incompatíveis, sem padrão claro
    - "perfil_limpo": poucos vínculos, empresa-alvo como principal, sem situações especiais
 3. Considere o CNAE da empresa avaliada para contextualizar o que é normal ou suspeito.
-4. Se o grau de confiança for < 70%, inclua até 2 perguntas de desambiguação no campo "perguntas_desambiguacao".${ctx.respostas_adicionais ? '\n5. O usuário já respondeu a uma rodada de perguntas de desambiguação (vide "Informações adicionais fornecidas" acima). NÃO faça novas perguntas — retorne "perguntas_desambiguacao" como array vazio e finalize a análise com a melhor estimativa possível, mesmo que a confiança permaneça abaixo de 70%.' : ''}
+4. Sempre finalize a análise com a melhor estimativa possível, mesmo que os dados disponíveis sejam limitados — não deixe de retornar um score por falta de informação.
 
 RETORNE APENAS O JSON ABAIXO, SEM TEXTO ADICIONAL:
 {
@@ -104,14 +108,12 @@ RETORNE APENAS O JSON ABAIXO, SEM TEXTO ADICIONAL:
   ],
   "hipotese_principal": "<hipotese em 1 frase>",
   "recomendacao": "<o que o tomador deve fazer — acionável e específico>",
-  "perguntas_desambiguacao": [],
   "bloqueadores": ["<bloqueador se houver>"]
 }`;
 }
 
-export async function analisarPerfilSocietario(ctx: ScoreContext): Promise<ScoreResponse> {
-  const completion = await groq.chat.completions.create({
-    model: MODEL,
+export async function analisarPerfilSocietario(ctx: ScoreContext): Promise<ScoreResult> {
+  const completion = await chatCompletion({
     messages: [{ role: 'user', content: buildPrompt(ctx) }],
     response_format: { type: 'json_object' },
     temperature: 0.2,
@@ -122,17 +124,7 @@ export async function analisarPerfilSocietario(ctx: ScoreContext): Promise<Score
   const jsonMatch = text.match(/\{[\s\S]*\}/);
   if (!jsonMatch) throw new Error('Groq returned no valid JSON');
 
-  const resultado: ScoreResult = JSON.parse(jsonMatch[0]);
-
-  if (resultado.perguntas_desambiguacao?.length > 0) {
-    return {
-      status: 'pendente_resposta',
-      perguntas: resultado.perguntas_desambiguacao,
-      contexto: ctx,
-    };
-  }
-
-  return { status: 'completo', resultado };
+  return JSON.parse(jsonMatch[0]) as ScoreResult;
 }
 
 export async function compararEmpresas(
@@ -155,8 +147,7 @@ EMPRESA 2: ${empresa2.razao_social} (CNPJ: ${empresa2.cnpj})
 
 Responda em até 4 frases diretas: qual contratar, por quê, e quais cautelas tomar. Linguagem para tomador de decisão, sem jargão técnico.`;
 
-  const completion = await groq.chat.completions.create({
-    model: MODEL,
+  const completion = await chatCompletion({
     messages: [{ role: 'user', content: prompt }],
     temperature: 0.3,
     max_tokens: 512,

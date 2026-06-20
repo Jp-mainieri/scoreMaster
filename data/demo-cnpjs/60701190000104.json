@@ -1,5 +1,4 @@
 {
-  "status": "completo",
   "resultado": {
     "score_final": 82,
     "classificacao_risco": "baixo",
@@ -16,9 +15,40 @@
     ],
     "hipotese_principal": "Grupo financeiro de grande porte com estrutura societária regulada e transparente.",
     "recomendacao": "Contratação recomendada. A solidez financeira e a regulação pelo Banco Central conferem alta previsibilidade contratual.",
-    "perguntas_desambiguacao": [],
     "bloqueadores": []
   },
+  "pilares": [
+    {
+      "pilar": "P1",
+      "nome": "Cadastral",
+      "status": "positivo",
+      "motivo": "Situação cadastral Ativa, capital social elevado e porte \"Demais\" — sem alertas cadastrais na Receita Federal."
+    },
+    {
+      "pilar": "P2",
+      "nome": "Tributário",
+      "status": "positivo",
+      "motivo": "Não optante do Simples Nacional — regime tributário compatível com instituição financeira de grande porte."
+    },
+    {
+      "pilar": "P3",
+      "nome": "Integridade",
+      "status": "positivo",
+      "motivo": "Nenhuma sanção encontrada nos cadastros CEIS (inidôneas/suspensas) ou CNEP (atos lesivos à administração pública) da CGU."
+    },
+    {
+      "pilar": "P4",
+      "nome": "Operacional",
+      "status": "positivo",
+      "motivo": "8 contrato(s) público(s) firmado(s) — indica capacidade operacional comprovada junto ao setor público."
+    },
+    {
+      "pilar": "P5",
+      "nome": "Rede societária",
+      "status": "positivo",
+      "motivo": "Todos os sócios analisados apresentam padrão societário limpo ou de investimento diversificado, sem sinais de empresa-passagem, blindagem patrimonial ou concentração serial."
+    }
+  ],
   "meta": {
     "cnpj": "60701190000104",
     "razao_social": "BANCO BRADESCO S.A.",

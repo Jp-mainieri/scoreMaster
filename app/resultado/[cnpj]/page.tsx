@@ -57,6 +57,9 @@ export default function ResultadoPage() {
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<ApiResponse | null>(null);
   const [error, setError] = useState('');
+  const [monitorando, setMonitorando] = useState(false);
+  const [monitorado, setMonitorado] = useState(false);
+  const [monitorarErro, setMonitorarErro] = useState('');
 
   useEffect(() => {
     const timers = STEP_TIMINGS.map((delay, i) =>
@@ -76,6 +79,28 @@ export default function ResultadoPage() {
       setError('Erro ao buscar dados. Verifique sua conexão.');
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleMonitorar() {
+    setMonitorando(true);
+    setMonitorarErro('');
+    try {
+      const res = await fetch('/api/monitoramento', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cnpj }),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        setMonitorarErro(json.error ?? 'Erro ao adicionar ao monitoramento.');
+        return;
+      }
+      setMonitorado(true);
+    } catch {
+      setMonitorarErro('Erro ao adicionar ao monitoramento. Tente novamente.');
+    } finally {
+      setMonitorando(false);
     }
   }
 
@@ -133,7 +158,7 @@ export default function ResultadoPage() {
         </div>
 
         {/* Score principal */}
-        <div className="mb-6">
+        <div className="mb-4">
           <ScoreCard
             score_final={resultado.score_final}
             classificacao_risco={resultado.classificacao_risco}
@@ -142,6 +167,33 @@ export default function ResultadoPage() {
             razao_social={meta?.razao_social}
             cnpj={meta?.cnpj}
           />
+        </div>
+
+        {/* Monitorar empresa */}
+        <div className="mb-6">
+          {monitorado ? (
+            <div className="flex items-center justify-center gap-2 bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm font-medium rounded-xl py-3">
+              <span>✓ Empresa adicionada ao monitoramento</span>
+              <a href="/monitoramento" className="underline hover:text-emerald-800">
+                Ver watchlist
+              </a>
+            </div>
+          ) : (
+            <button
+              onClick={handleMonitorar}
+              disabled={monitorando}
+              className="w-full bg-white hover:bg-gray-50 disabled:opacity-60 disabled:cursor-not-allowed text-gray-700 font-semibold py-3 rounded-xl border border-gray-200 transition-colors text-sm flex items-center justify-center gap-2"
+            >
+              {monitorando ? (
+                <>Gerando exemplo de monitoramento...</>
+              ) : (
+                <>🔔 Monitorar esta empresa</>
+              )}
+            </button>
+          )}
+          {monitorarErro && (
+            <p className="text-red-500 text-xs mt-2 text-center">{monitorarErro}</p>
+          )}
         </div>
 
         {/* Métricas */}

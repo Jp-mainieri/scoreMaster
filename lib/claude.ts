@@ -5,7 +5,7 @@ const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 const MODEL_PRIMARY = 'llama-3.3-70b-versatile';
 const MODEL_FALLBACK = 'llama-3.1-8b-instant';
 
-async function chatCompletion(params: Omit<ChatCompletionCreateParamsNonStreaming, 'model'>) {
+export async function chatCompletion(params: Omit<ChatCompletionCreateParamsNonStreaming, 'model'>) {
   try {
     return await groq.chat.completions.create({ ...params, model: MODEL_PRIMARY });
   } catch (err) {

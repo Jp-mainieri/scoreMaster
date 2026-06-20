@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { WATCHLIST_MOCK, type FornecedorMonitorado } from '@/data/watchlist-mock';
+import type { FornecedorMonitorado } from '@/lib/monitoramento';
 import AlertaBadge from '@/components/AlertaBadge';
 
 /* ── Risk palette (same as ScoreCard) ── */
@@ -187,17 +187,18 @@ function WatchlistRow({
 
 /* ── Main page ── */
 export default function MonitoramentoPage() {
-  const [watchlist, setWatchlist] = useState<FornecedorMonitorado[]>(WATCHLIST_MOCK);
+  const [watchlist, setWatchlist] = useState<FornecedorMonitorado[]>([]);
   const [cnpjInput, setCnpjInput] = useState('');
   const [error, setError] = useState('');
   const [toast, setToast] = useState('');
+  const [gerando, setGerando] = useState(false);
 
   function showToast(msg: string) {
     setToast(msg);
     setTimeout(() => setToast(''), 3000);
   }
 
-  function handleAdicionar(e: React.FormEvent) {
+  async function handleAdicionar(e: React.FormEvent) {
     e.preventDefault();
     const clean = cnpjInput.replace(/\D/g, '');
     if (clean.length !== 14) {
@@ -209,28 +210,29 @@ export default function MonitoramentoPage() {
       return;
     }
     setError('');
+    setGerando(true);
 
-    const mockScore = Math.floor(Math.random() * 51) + 40; // 40-90
-    const classificacao =
-      mockScore >= 81 ? 'baixo' :
-      mockScore >= 61 ? 'medio' :
-      mockScore >= 41 ? 'medio_alto' : 'alto';
+    try {
+      const res = await fetch('/api/monitoramento', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cnpj: clean }),
+      });
+      const novo = await res.json();
 
-    const novo: FornecedorMonitorado = {
-      id: crypto.randomUUID(),
-      cnpj: clean,
-      razao_social: `EMPRESA ${clean.slice(0, 4)}... (CNPJ adicionado)`,
-      score_atual: mockScore,
-      score_anterior: mockScore,
-      classificacao: classificacao as FornecedorMonitorado['classificacao'],
-      alertas: [],
-      variacao: 0,
-      ultima_verificacao: new Date().toISOString(),
-    };
+      if (!res.ok) {
+        setError(novo.error ?? 'Erro ao gerar exemplo de monitoramento.');
+        return;
+      }
 
-    setWatchlist([novo, ...watchlist]);
-    setCnpjInput('');
-    showToast(`✅ Fornecedor adicionado à watchlist — Score inicial: ${mockScore}`);
+      setWatchlist((prev) => [novo as FornecedorMonitorado, ...prev]);
+      setCnpjInput('');
+      showToast(`✅ ${novo.razao_social} adicionada à watchlist — Score: ${novo.score_atual}`);
+    } catch {
+      setError('Erro ao buscar dados da empresa. Tente novamente.');
+    } finally {
+      setGerando(false);
+    }
   }
 
   function handleRemover(id: string) {
@@ -279,17 +281,24 @@ export default function MonitoramentoPage() {
                 placeholder="Adicionar CNPJ à watchlist..."
                 value={cnpjInput}
                 onChange={(e) => setCnpjInput(formatInputCNPJ(e.target.value))}
-                className="w-full bg-transparent pl-10 pr-4 py-3 text-white placeholder-gray-600 text-sm outline-none"
+                disabled={gerando}
+                className="w-full bg-transparent pl-10 pr-4 py-3 text-white placeholder-gray-600 text-sm outline-none disabled:opacity-50"
               />
             </div>
             <button
               type="submit"
-              className="bg-blue-500 hover:bg-blue-400 text-white font-semibold px-6 py-3 rounded-xl transition-colors text-sm shrink-0"
+              disabled={gerando}
+              className="bg-blue-500 hover:bg-blue-400 disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold px-6 py-3 rounded-xl transition-colors text-sm shrink-0"
             >
-              🔔 Monitorar
+              {gerando ? 'Gerando exemplo...' : '🔔 Monitorar'}
             </button>
           </div>
           {error && <p className="text-red-400 text-xs mt-2 px-2">{error}</p>}
+          {gerando && (
+            <p className="text-gray-500 text-xs mt-2 px-2">
+              Consultando CNPJá e gerando cenário de exemplo com IA...
+            </p>
+          )}
         </form>
 
         {/* Watchlist table */}

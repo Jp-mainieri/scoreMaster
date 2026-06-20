@@ -7,6 +7,7 @@ import SocioCard from '@/components/SocioCard';
 import LoadingSteps from '@/components/LoadingSteps';
 import RecomendacaoIA from '@/components/RecomendacaoIA';
 import ChecklistPilares from '@/components/ChecklistPilares';
+import { WATCHLIST_STORAGE_KEY } from '@/lib/watchlist-storage';
 
 interface ScoreResult {
   score_final: number;
@@ -57,6 +58,9 @@ export default function ResultadoPage() {
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<ApiResponse | null>(null);
   const [error, setError] = useState('');
+  const [monitorando, setMonitorando] = useState(false);
+  const [monitorado, setMonitorado] = useState(false);
+  const [monitorarErro, setMonitorarErro] = useState('');
 
   useEffect(() => {
     const timers = STEP_TIMINGS.map((delay, i) =>
@@ -64,6 +68,17 @@ export default function ResultadoPage() {
     );
     fetchScore();
     return () => timers.forEach(clearTimeout);
+  }, [cnpj]);
+
+  useEffect(() => {
+    try {
+      const atual: Array<{ cnpj: string }> = JSON.parse(
+        localStorage.getItem(WATCHLIST_STORAGE_KEY) ?? '[]'
+      );
+      if (atual.some((f) => f.cnpj === cnpj)) setMonitorado(true);
+    } catch {
+      // localStorage indisponível — botão segue no estado padrão
+    }
   }, [cnpj]);
 
   async function fetchScore() {
@@ -76,6 +91,38 @@ export default function ResultadoPage() {
       setError('Erro ao buscar dados. Verifique sua conexão.');
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleMonitorar() {
+    setMonitorando(true);
+    setMonitorarErro('');
+    try {
+      const atual: Array<{ cnpj: string }> = JSON.parse(
+        localStorage.getItem(WATCHLIST_STORAGE_KEY) ?? '[]'
+      );
+      if (atual.some((f) => f.cnpj === cnpj)) {
+        setMonitorado(true);
+        return;
+      }
+
+      const res = await fetch('/api/monitoramento', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cnpj }),
+      });
+      const novo = await res.json();
+      if (!res.ok) {
+        setMonitorarErro(novo.error ?? 'Erro ao adicionar ao monitoramento.');
+        return;
+      }
+
+      localStorage.setItem(WATCHLIST_STORAGE_KEY, JSON.stringify([novo, ...atual]));
+      setMonitorado(true);
+    } catch {
+      setMonitorarErro('Erro ao adicionar ao monitoramento. Tente novamente.');
+    } finally {
+      setMonitorando(false);
     }
   }
 
@@ -126,10 +173,14 @@ export default function ResultadoPage() {
           <a href="/comparar" className="text-blue-500 hover:text-blue-400 transition-colors text-sm">
             Comparar com outra empresa
           </a>
+          <span className="text-gray-200">|</span>
+          <a href="/monitoramento" className="text-blue-500 hover:text-blue-400 transition-colors text-sm">
+            🔔 Monitoramento
+          </a>
         </div>
 
         {/* Score principal */}
-        <div className="mb-6">
+        <div className="mb-4">
           <ScoreCard
             score_final={resultado.score_final}
             classificacao_risco={resultado.classificacao_risco}
@@ -138,6 +189,33 @@ export default function ResultadoPage() {
             razao_social={meta?.razao_social}
             cnpj={meta?.cnpj}
           />
+        </div>
+
+        {/* Monitorar empresa */}
+        <div className="mb-6">
+          {monitorado ? (
+            <div className="flex items-center justify-center gap-2 bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm font-medium rounded-xl py-3">
+              <span>✓ Empresa adicionada ao monitoramento</span>
+              <a href="/monitoramento" className="underline hover:text-emerald-800">
+                Ver watchlist
+              </a>
+            </div>
+          ) : (
+            <button
+              onClick={handleMonitorar}
+              disabled={monitorando}
+              className="w-full bg-white hover:bg-gray-50 disabled:opacity-60 disabled:cursor-not-allowed text-gray-700 font-semibold py-3 rounded-xl border border-gray-200 transition-colors text-sm flex items-center justify-center gap-2"
+            >
+              {monitorando ? (
+                <>Gerando exemplo de monitoramento...</>
+              ) : (
+                <>🔔 Monitorar esta empresa</>
+              )}
+            </button>
+          )}
+          {monitorarErro && (
+            <p className="text-red-500 text-xs mt-2 text-center">{monitorarErro}</p>
+          )}
         </div>
 
         {/* Métricas */}

@@ -2,9 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { consultarCNPJ, limparCNPJ } from '@/lib/cnpja';
 import { consultarCEIS, consultarCNEP } from '@/lib/cgu';
 import { consultarContratos } from '@/lib/transparencia';
-import { consultarProcessos } from '@/lib/datajud';
 import { buscarEmpresasDeSocio, normalizarNome, upsertSituacao } from '@/lib/database';
 import { analisarPerfilSocietario, ScoreContext, SocioComRede } from '@/lib/claude';
+import { avaliarPilares } from '@/lib/pilares';
 import fs from 'fs';
 import path from 'path';
 
@@ -35,11 +35,10 @@ export async function GET(req: NextRequest) {
       cnae_principal: String(empresa.mainActivity.id),
     });
 
-    const [ceis, cnep, contratos, processos] = await Promise.all([
+    const [ceis, cnep, contratos] = await Promise.all([
       consultarCEIS(clean),
       consultarCNEP(clean),
       consultarContratos(clean),
-      consultarProcessos(clean),
     ]);
 
     const sancoes = [...ceis, ...cnep];
@@ -64,7 +63,7 @@ export async function GET(req: NextRequest) {
     const sociosComRedes: SocioComRede[] = members.map((member) => {
       const nome = member.person.name;
       const nomeNorm = normalizarNome(nome);
-      const empresasNaRede = buscarEmpresasDeSocio(nomeNorm);
+      const empresasNaRede = buscarEmpresasDeSocio(nomeNorm, member.person.taxId);
       return {
         nome,
         qualificacao: member.role.text,
@@ -93,23 +92,23 @@ export async function GET(req: NextRequest) {
         mei: empresa.company.simei.optant,
       },
       socios_com_redes: sociosComRedes,
-      processos_count: processos.length,
       sancoes: sancaoTexto,
       contratos_count: contratos.length,
       contratos_valor: contratosValor,
     };
 
-    const scoreResponse = await analisarPerfilSocietario(ctx);
+    const resultado = await analisarPerfilSocietario(ctx);
+    const pilares = avaliarPilares(ctx, resultado);
 
     return NextResponse.json({
-      ...scoreResponse,
+      resultado,
+      pilares,
       meta: {
         cnpj: clean,
         razao_social: empresa.company.name,
         cnae: empresa.mainActivity.text,
         situacao: empresa.status.text,
         socios_count: members.length,
-        processos_count: processos.length,
         sancoes_count: sancoes.length,
         contratos_count: contratos.length,
       },

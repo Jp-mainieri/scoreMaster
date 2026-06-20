@@ -1,5 +1,4 @@
 {
-  "status": "completo",
   "resultado": {
     "score_final": 87,
     "classificacao_risco": "baixo",
@@ -16,16 +15,46 @@
     ],
     "hipotese_principal": "Empresa de capital misto com governança robusta e histórico operacional sólido de mais de 70 anos.",
     "recomendacao": "Empresa confiável para contratação. Recomenda-se verificar apenas os prazos de pagamento contratuais — empresas estatais podem ter ciclos mais longos.",
-    "perguntas_desambiguacao": [],
     "bloqueadores": []
   },
+  "pilares": [
+    {
+      "pilar": "P1",
+      "nome": "Cadastral",
+      "status": "positivo",
+      "motivo": "Situação cadastral Ativa, capital social de R$ 205.432.000.000,00 e porte \"Demais\" — sem alertas cadastrais na Receita Federal."
+    },
+    {
+      "pilar": "P2",
+      "nome": "Tributário",
+      "status": "positivo",
+      "motivo": "Não optante do Simples Nacional — regime tributário compatível com empresas de maior porte ou faturamento."
+    },
+    {
+      "pilar": "P3",
+      "nome": "Integridade",
+      "status": "positivo",
+      "motivo": "Nenhuma sanção encontrada nos cadastros CEIS (inidôneas/suspensas) ou CNEP (atos lesivos à administração pública) da CGU."
+    },
+    {
+      "pilar": "P4",
+      "nome": "Operacional",
+      "status": "positivo",
+      "motivo": "15 contrato(s) público(s) firmado(s) — indica capacidade operacional comprovada junto ao setor público."
+    },
+    {
+      "pilar": "P5",
+      "nome": "Rede societária",
+      "status": "positivo",
+      "motivo": "Todos os sócios analisados apresentam padrão societário limpo ou de investimento diversificado, sem sinais de empresa-passagem, blindagem patrimonial ou concentração serial."
+    }
+  ],
   "meta": {
     "cnpj": "33000167000101",
     "razao_social": "PETRÓLEO BRASILEIRO S.A. - PETROBRAS",
     "cnae": "Extração de petróleo e gás natural",
     "situacao": "Ativa",
     "socios_count": 2,
-    "processos_count": 2,
     "sancoes_count": 0,
     "contratos_count": 15
   }

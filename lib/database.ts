@@ -145,9 +145,32 @@ export interface SocioNaRede {
   data_entrada_sociedade: string;
 }
 
-export function buscarEmpresasDeSocio(nomeSocio: string): SocioNaRede[] {
+export function buscarEmpresasDeSocio(nomeSocio: string, cpfMascarado?: string | null): SocioNaRede[] {
   const db = getDb();
   const nomeNorm = normalizarNome(nomeSocio);
+
+  // Nomes comuns (ex: "JOSE CARLOS DA SILVA") colidem entre pessoas distintas.
+  // O CPF mascarado (6 dígitos centrais visíveis) desambigua quando disponível.
+  if (cpfMascarado) {
+    const rows = db.prepare(`
+      SELECT
+        s.cnpj_basico,
+        e.razao_social,
+        e.natureza_juridica,
+        e.capital_social,
+        e.porte_empresa,
+        sit.situacao_cadastral,
+        sit.situacao_especial,
+        sit.cnae_principal,
+        s.qualificacao_socio,
+        s.data_entrada_sociedade
+      FROM socios s
+      LEFT JOIN empresas e ON s.cnpj_basico = e.cnpj_basico
+      LEFT JOIN situacoes sit ON s.cnpj_basico = sit.cnpj_basico
+      WHERE s.nome_socio = ? AND s.cnpj_cpf_socio = ?
+    `).all(nomeNorm, cpfMascarado) as SocioNaRede[];
+    return rows;
+  }
 
   const rows = db.prepare(`
     SELECT

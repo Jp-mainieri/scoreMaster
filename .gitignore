@@ -36,6 +36,12 @@ yarn-error.log*
 # vercel
 .vercel
 
+# data — raw RFB downloads and local SQLite db (regenerate via scripts/ingest-real-data.ts)
+/data/rfb-raw/
+/data/*.db
+/data/*.db-shm
+/data/*.db-wal
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

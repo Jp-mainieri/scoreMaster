@@ -1,5 +1,4 @@
 {
-  "status": "completo",
   "resultado": {
     "score_final": 41,
     "classificacao_risco": "medio_alto",
@@ -29,18 +28,48 @@
     ],
     "hipotese_principal": "Empresa com sócio majoritário apresentando padrão de empresa-passagem, com histórico de abrir/fechar CNPJs com capital mínimo.",
     "recomendacao": "Solicite balanços dos últimos 2 anos e garantias contratuais antes de fechar. Evite pagamentos antecipados superiores a 20% do contrato. Exija caução ou seguro-garantia para contratos acima de R$ 50 mil.",
-    "perguntas_desambiguacao": [],
     "bloqueadores": [
       "Sócio majoritário com 3 empresas baixadas nos últimos 4 anos"
     ]
   },
+  "pilares": [
+    {
+      "pilar": "P1",
+      "nome": "Cadastral",
+      "status": "atencao",
+      "motivo": "Situação cadastral está Ativa, mas o capital social declarado é muito baixo (R$ 1.000,00) — pode indicar baixa capacidade financeira formal, comum em empresas de fachada."
+    },
+    {
+      "pilar": "P2",
+      "nome": "Tributário",
+      "status": "positivo",
+      "motivo": "Optante do Simples Nacional — regime tributário regular e compatível com pequenas/médias empresas, sem implicação direta de risco."
+    },
+    {
+      "pilar": "P3",
+      "nome": "Integridade",
+      "status": "positivo",
+      "motivo": "Nenhuma sanção encontrada nos cadastros CEIS (inidôneas/suspensas) ou CNEP (atos lesivos à administração pública) da CGU."
+    },
+    {
+      "pilar": "P4",
+      "nome": "Operacional",
+      "status": "atencao",
+      "motivo": "Nenhum contrato público encontrado no Portal da Transparência — não há evidência de capacidade operacional via contratação pública."
+    },
+    {
+      "pilar": "P5",
+      "nome": "Rede societária",
+      "status": "negativo",
+      "motivo": "1 de 2 sócios com padrão societário de risco identificado pela IA: ROBERTO ALVES COSTA (empresa passagem). Ver análise individual de cada sócio abaixo."
+    }
+  ],
   "meta": {
     "cnpj": "07526557000100",
     "razao_social": "RC SERVICOS E COMERCIO LTDA",
     "cnae": "Serviços especializados para construção",
     "situacao": "Ativa",
     "socios_count": 2,
-    "processos_count": 2,
     "sancoes_count": 0,
     "contratos_count": 0
   }

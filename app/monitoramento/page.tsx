@@ -1,17 +1,16 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import type { FornecedorMonitorado } from '@/lib/monitoramento';
-import { WATCHLIST_STORAGE_KEY } from '@/lib/watchlist-storage';
+import { useEffect, useState, useCallback } from 'react';
+import { WATCHLIST_SEED, type FornecedorMonitorado } from '@/data/watchlist-mock';
 import AlertaBadge from '@/components/AlertaBadge';
 
 /* ── Risk palette (same as ScoreCard) ── */
 const RISCO_CONFIG = {
-  baixo:     { label: 'Baixo',      dot: 'bg-emerald-400', text: 'text-emerald-400', bg: 'bg-emerald-500/15', border: 'border-emerald-500/30' },
-  medio:     { label: 'Médio',      dot: 'bg-yellow-400',  text: 'text-yellow-400',  bg: 'bg-yellow-500/15',  border: 'border-yellow-500/30' },
-  medio_alto:{ label: 'Médio-Alto', dot: 'bg-orange-400',  text: 'text-orange-400',  bg: 'bg-orange-500/15',  border: 'border-orange-500/30' },
-  alto:      { label: 'Alto',       dot: 'bg-red-400',     text: 'text-red-400',     bg: 'bg-red-500/15',     border: 'border-red-500/30' },
-  critico:   { label: 'Crítico',    dot: 'bg-red-600',     text: 'text-red-500',     bg: 'bg-red-600/20',     border: 'border-red-500/40' },
+  baixo: { label: 'Baixo', dot: 'bg-emerald-400', text: 'text-emerald-400', bg: 'bg-emerald-500/15', border: 'border-emerald-500/30' },
+  medio: { label: 'Médio', dot: 'bg-yellow-400', text: 'text-yellow-400', bg: 'bg-yellow-500/15', border: 'border-yellow-500/30' },
+  medio_alto: { label: 'Médio-Alto', dot: 'bg-orange-400', text: 'text-orange-400', bg: 'bg-orange-500/15', border: 'border-orange-500/30' },
+  alto: { label: 'Alto', dot: 'bg-red-400', text: 'text-red-400', bg: 'bg-red-500/15', border: 'border-red-500/30' },
+  critico: { label: 'Crítico', dot: 'bg-red-600', text: 'text-red-500', bg: 'bg-red-600/20', border: 'border-red-500/40' },
 } as const;
 
 function scoreColor(score: number) {
@@ -21,7 +20,7 @@ function scoreColor(score: number) {
   return 'text-red-400';
 }
 
-function borderLeftColor(classificacao: string) {
+function borderLeftColor(classificacao: string | null) {
   if (classificacao === 'critico') return 'border-l-red-500';
   if (classificacao === 'alto') return 'border-l-orange-500';
   return 'border-l-transparent';
@@ -54,18 +53,40 @@ function timeAgo(dateStr: string) {
   return `${Math.floor(hrs / 24)}d atrás`;
 }
 
+/* ── Fetch real score from the API ── */
+async function fetchRealScore(cnpj: string): Promise<{
+  score: number;
+  classificacao: FornecedorMonitorado['classificacao'];
+  razao_social: string;
+} | null> {
+  try {
+    const res = await fetch(`/api/score?cnpj=${cnpj}`);
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (data.error) return null;
+    return {
+      score: data.resultado?.score_final ?? data.score_final ?? 0,
+      classificacao: data.resultado?.classificacao_risco ?? data.classificacao_risco ?? 'medio',
+      razao_social: data.meta?.razao_social ?? `CNPJ ${cnpj}`,
+    };
+  } catch {
+    return null;
+  }
+}
+
 /* ── Stats header cards ── */
 function StatsHeader({ watchlist }: { watchlist: FornecedorMonitorado[] }) {
   const total = watchlist.length;
-  const criticos = watchlist.filter((f) => f.classificacao === 'critico' || f.classificacao === 'alto').length;
+  const loaded = watchlist.filter((f) => f.score_atual !== null);
+  const criticos = loaded.filter((f) => f.classificacao === 'critico' || f.classificacao === 'alto').length;
   const totalAlertas = watchlist.reduce((acc, f) => acc + f.alertas.length, 0);
-  const mediaScore = total > 0 ? Math.round(watchlist.reduce((acc, f) => acc + f.score_atual, 0) / total) : 0;
+  const mediaScore = loaded.length > 0 ? Math.round(loaded.reduce((acc, f) => acc + (f.score_atual ?? 0), 0) / loaded.length) : 0;
 
   const cards = [
-    { label: 'Monitorados',  value: total,        icon: '👁️', accent: 'text-blue-400' },
+    { label: 'Monitorados', value: total, icon: '👁️', accent: 'text-blue-400' },
     { label: 'Risco Alto/Crítico', value: criticos, icon: '🚨', accent: 'text-red-400' },
     { label: 'Alertas Ativos', value: totalAlertas, icon: '🔔', accent: 'text-orange-400' },
-    { label: 'Score Médio',  value: mediaScore,    icon: '📊', accent: 'text-emerald-400' },
+    { label: 'Score Médio', value: mediaScore, icon: '📊', accent: 'text-emerald-400' },
   ];
 
   return (
@@ -94,13 +115,18 @@ function WatchlistRow({
   onRemove: () => void;
 }) {
   const [removing, setRemoving] = useState(false);
-  const config = RISCO_CONFIG[fornecedor.classificacao] ?? RISCO_CONFIG.medio;
-  const pulseDanger = fornecedor.variacao < -10;
+  const config = fornecedor.classificacao
+    ? (RISCO_CONFIG[fornecedor.classificacao] ?? RISCO_CONFIG.medio)
+    : RISCO_CONFIG.medio;
+  const variacao = fornecedor.variacao ?? 0;
+  const pulseDanger = variacao < -10;
 
   function handleRemove() {
     setRemoving(true);
     setTimeout(onRemove, 300);
   }
+
+  const isLoading = fornecedor.loading || fornecedor.score_atual === null;
 
   return (
     <div
@@ -121,34 +147,53 @@ function WatchlistRow({
 
         {/* Col 4: Score */}
         <div className="col-span-4 md:col-span-1 text-center">
-          <p className={`text-2xl font-black ${scoreColor(fornecedor.score_atual)}`}>
-            {fornecedor.score_atual}
-          </p>
-          <p className="text-[10px] text-gray-600 uppercase tracking-wider">Score</p>
+          {isLoading ? (
+            <div className="flex flex-col items-center">
+              <span className="text-lg animate-pulse text-gray-500">···</span>
+              <p className="text-[10px] text-gray-600 uppercase tracking-wider">Consultando</p>
+            </div>
+          ) : (
+            <>
+              <p className={`text-2xl font-black ${scoreColor(fornecedor.score_atual!)}`}>
+                {fornecedor.score_atual}
+              </p>
+              <p className="text-[10px] text-gray-600 uppercase tracking-wider">Score</p>
+            </>
+          )}
         </div>
 
         {/* Col 5: Risk badge */}
         <div className="col-span-4 md:col-span-2 flex justify-center">
-          <span className={`inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full border ${config.text} ${config.bg} ${config.border}`}>
-            <span className={`w-1.5 h-1.5 rounded-full ${config.dot}`} />
-            {config.label}
-          </span>
+          {isLoading ? (
+            <span className="text-xs text-gray-600 animate-pulse">Carregando...</span>
+          ) : (
+            <span className={`inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full border ${config.text} ${config.bg} ${config.border}`}>
+              <span className={`w-1.5 h-1.5 rounded-full ${config.dot}`} />
+              {config.label}
+            </span>
+          )}
         </div>
 
         {/* Col 6: Variation */}
         <div className="col-span-4 md:col-span-1 text-center">
-          {fornecedor.variacao > 0 && (
-            <span className="text-emerald-400 text-sm font-bold">▲ +{fornecedor.variacao}</span>
+          {isLoading ? (
+            <span className="text-xs text-gray-600 animate-pulse">—</span>
+          ) : (
+            <>
+              {variacao > 0 && (
+                <span className="text-emerald-400 text-sm font-bold">▲ +{variacao}</span>
+              )}
+              {variacao < 0 && (
+                <span className={`text-red-400 text-sm font-bold ${pulseDanger ? 'animate-pulse' : ''}`}>
+                  ▼ {variacao}
+                </span>
+              )}
+              {variacao === 0 && (
+                <span className="text-gray-500 text-sm font-medium">— estável</span>
+              )}
+              <p className="text-[10px] text-gray-600 uppercase tracking-wider mt-0.5">Variação</p>
+            </>
           )}
-          {fornecedor.variacao < 0 && (
-            <span className={`text-red-400 text-sm font-bold ${pulseDanger ? 'animate-pulse' : ''}`}>
-              ▼ {fornecedor.variacao}
-            </span>
-          )}
-          {fornecedor.variacao === 0 && (
-            <span className="text-gray-500 text-sm font-medium">— estável</span>
-          )}
-          <p className="text-[10px] text-gray-600 uppercase tracking-wider mt-0.5">Variação</p>
         </div>
 
         {/* Col 7-9: Alerts */}
@@ -188,34 +233,56 @@ function WatchlistRow({
 
 /* ── Main page ── */
 export default function MonitoramentoPage() {
-  const [watchlist, setWatchlist] = useState<FornecedorMonitorado[]>([]);
+  const [watchlist, setWatchlist] = useState<FornecedorMonitorado[]>(WATCHLIST_SEED);
   const [cnpjInput, setCnpjInput] = useState('');
   const [error, setError] = useState('');
   const [toast, setToast] = useState('');
-  const [gerando, setGerando] = useState(false);
-  const [carregado, setCarregado] = useState(false);
-
-  useEffect(() => {
-    try {
-      const salvo = localStorage.getItem(WATCHLIST_STORAGE_KEY);
-      if (salvo) setWatchlist(JSON.parse(salvo));
-    } catch {
-      // localStorage indisponível ou JSON corrompido — segue com watchlist vazia
-    } finally {
-      setCarregado(true);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (!carregado) return; // evita sobrescrever o localStorage com [] antes de carregar
-    localStorage.setItem(WATCHLIST_STORAGE_KEY, JSON.stringify(watchlist));
-  }, [watchlist, carregado]);
+  const [initialLoaded, setInitialLoaded] = useState(false);
 
   function showToast(msg: string) {
     setToast(msg);
     setTimeout(() => setToast(''), 3000);
   }
 
+  /* Fetch real scores for all suppliers on mount */
+  const loadScores = useCallback(async () => {
+    setWatchlist((prev) => prev.map((f) => ({ ...f, loading: true })));
+
+    const results = await Promise.allSettled(
+      WATCHLIST_SEED.map(async (f) => {
+        const data = await fetchRealScore(f.cnpj);
+        return { cnpj: f.cnpj, data };
+      })
+    );
+
+    setWatchlist((prev) =>
+      prev.map((f) => {
+        const match = results.find(
+          (r) => r.status === 'fulfilled' && r.value.cnpj === f.cnpj
+        );
+        if (match && match.status === 'fulfilled' && match.value.data) {
+          const { score, classificacao, razao_social } = match.value.data;
+          const variacao = f.score_anterior !== null ? score - f.score_anterior : 0;
+          return {
+            ...f,
+            score_atual: score,
+            classificacao,
+            razao_social,
+            variacao,
+            loading: false,
+          };
+        }
+        return { ...f, loading: false };
+      })
+    );
+    setInitialLoaded(true);
+  }, []);
+
+  useEffect(() => {
+    loadScores();
+  }, [loadScores]);
+
+  /* Add a new CNPJ — fetch its real score from the API */
   async function handleAdicionar(e: React.FormEvent) {
     e.preventDefault();
     const clean = cnpjInput.replace(/\D/g, '');
@@ -228,28 +295,52 @@ export default function MonitoramentoPage() {
       return;
     }
     setError('');
-    setGerando(true);
 
-    try {
-      const res = await fetch('/api/monitoramento', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ cnpj: clean }),
-      });
-      const novo = await res.json();
+    // Add placeholder row while loading
+    const placeholderId = crypto.randomUUID();
+    const placeholder: FornecedorMonitorado = {
+      id: placeholderId,
+      cnpj: clean,
+      razao_social: `Consultando CNPJ ${formatCNPJ(clean)}...`,
+      score_atual: null,
+      score_anterior: null,
+      classificacao: null,
+      alertas: [],
+      variacao: null,
+      ultima_verificacao: new Date().toISOString(),
+      loading: true,
+    };
+    setWatchlist((prev) => [placeholder, ...prev]);
+    setCnpjInput('');
+    showToast('🔍 Buscando score real do fornecedor...');
 
-      if (!res.ok) {
-        setError(novo.error ?? 'Erro ao gerar exemplo de monitoramento.');
-        return;
-      }
-
-      setWatchlist((prev) => [novo as FornecedorMonitorado, ...prev]);
-      setCnpjInput('');
-      showToast(`✅ ${novo.razao_social} adicionada à watchlist — Score: ${novo.score_atual}`);
-    } catch {
-      setError('Erro ao buscar dados da empresa. Tente novamente.');
-    } finally {
-      setGerando(false);
+    // Fetch real score
+    const data = await fetchRealScore(clean);
+    if (data) {
+      setWatchlist((prev) =>
+        prev.map((f) =>
+          f.id === placeholderId
+            ? {
+              ...f,
+              razao_social: data.razao_social,
+              score_atual: data.score,
+              classificacao: data.classificacao,
+              variacao: 0,
+              loading: false,
+            }
+            : f
+        )
+      );
+      showToast(`✅ ${data.razao_social} — Score real: ${data.score}`);
+    } else {
+      setWatchlist((prev) =>
+        prev.map((f) =>
+          f.id === placeholderId
+            ? { ...f, razao_social: `CNPJ ${formatCNPJ(clean)} (erro na consulta)`, loading: false }
+            : f
+        )
+      );
+      showToast('⚠️ Não foi possível buscar o score. O CNPJ foi adicionado mesmo assim.');
     }
   }
 
@@ -280,7 +371,7 @@ export default function MonitoramentoPage() {
               </div>
             </div>
             <p className="text-gray-500 text-sm mt-1">
-              Watchlist de fornecedores. Alertas em tempo real sobre variações de risco.
+              Watchlist de fornecedores. Scores consultados em tempo real via API.
             </p>
           </div>
         </div>
@@ -299,24 +390,17 @@ export default function MonitoramentoPage() {
                 placeholder="Adicionar CNPJ à watchlist..."
                 value={cnpjInput}
                 onChange={(e) => setCnpjInput(formatInputCNPJ(e.target.value))}
-                disabled={gerando}
-                className="w-full bg-transparent pl-10 pr-4 py-3 text-white placeholder-gray-600 text-sm outline-none disabled:opacity-50"
+                className="w-full bg-transparent pl-10 pr-4 py-3 text-white placeholder-gray-600 text-sm outline-none"
               />
             </div>
             <button
               type="submit"
-              disabled={gerando}
-              className="bg-blue-500 hover:bg-blue-400 disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold px-6 py-3 rounded-xl transition-colors text-sm shrink-0"
+              className="bg-blue-500 hover:bg-blue-400 text-white font-semibold px-6 py-3 rounded-xl transition-colors text-sm shrink-0"
             >
-              {gerando ? 'Gerando exemplo...' : '🔔 Monitorar'}
+              🔔 Monitorar
             </button>
           </div>
           {error && <p className="text-red-400 text-xs mt-2 px-2">{error}</p>}
-          {gerando && (
-            <p className="text-gray-500 text-xs mt-2 px-2">
-              Consultando CNPJá e gerando cenário de exemplo com IA...
-            </p>
-          )}
         </form>
 
         {/* Watchlist table */}
@@ -351,12 +435,7 @@ export default function MonitoramentoPage() {
         )}
 
         {/* Footer info */}
-        <div className="mt-10 text-center">
-          <div className="inline-flex items-center gap-2 bg-white/5 text-gray-500 text-xs px-4 py-2 rounded-full border border-white/10">
-            <span className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-pulse" />
-            Verificação automática a cada 6 horas — Powered by Claude AI
-          </div>
-        </div>
+
       </div>
 
       {/* Toast */}

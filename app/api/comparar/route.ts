@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { consultarCNPJ, limparCNPJ } from '@/lib/cnpja';
 import { consultarCEIS, consultarCNEP } from '@/lib/cgu';
 import { consultarContratos } from '@/lib/transparencia';
-import { consultarProcessos } from '@/lib/datajud';
 import { buscarEmpresasDeSocio, normalizarNome, upsertSituacao } from '@/lib/database';
 import {
   analisarPerfilSocietario,
@@ -23,11 +22,10 @@ async function buildScore(
     cnae_principal: String(empresa.mainActivity.id),
   });
 
-  const [ceis, cnep, contratos, processos] = await Promise.all([
+  const [ceis, cnep, contratos] = await Promise.all([
     consultarCEIS(clean),
     consultarCNEP(clean),
     consultarContratos(clean),
-    consultarProcessos(clean),
   ]);
 
   const sancoes = [...ceis, ...cnep];
@@ -43,7 +41,7 @@ async function buildScore(
   const sociosComRedes: SocioComRede[] = members.map((member) => {
     const nome = member.person.name;
     const nomeNorm = normalizarNome(nome);
-    const empresasNaRede = buscarEmpresasDeSocio(nomeNorm);
+    const empresasNaRede = buscarEmpresasDeSocio(nomeNorm, member.person.taxId);
     return {
       nome,
       qualificacao: member.role.text,
@@ -72,7 +70,6 @@ async function buildScore(
       mei: empresa.company.simei.optant,
     },
     socios_com_redes: sociosComRedes,
-    processos_count: processos.length,
     sancoes: sancaoTexto,
     contratos_count: contratos.length,
     contratos_valor: contratosValor,

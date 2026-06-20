@@ -36,7 +36,6 @@ interface ApiResponse {
     cnae: string;
     situacao: string;
     socios_count: number;
-    processos_count: number;
     sancoes_count: number;
     contratos_count: number;
   };
@@ -78,22 +77,31 @@ export default function ResultadoPage() {
     }
   }
 
-  async function responderPerguntas() {
+  async function enviarRespostas(respostas: string[]) {
     if (!data?.contexto) return;
     setRespondendo(true);
     try {
       const res = await fetch('/api/score/responder', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contexto: data.contexto, respostas: inputRespostas }),
+        body: JSON.stringify({ contexto: data.contexto, respostas }),
       });
       const json: ApiResponse = await res.json();
       setData(json);
+      if (json.error) setError(json.error);
     } catch {
       setError('Erro ao processar respostas.');
     } finally {
       setRespondendo(false);
     }
+  }
+
+  function responderPerguntas() {
+    return enviarRespostas(inputRespostas);
+  }
+
+  function pularPerguntas() {
+    return enviarRespostas(['Usuário optou por não fornecer informações adicionais — finalize com os dados disponíveis.']);
   }
 
   if (loading) {
@@ -168,7 +176,7 @@ export default function ResultadoPage() {
                 Analisar com contexto
               </button>
               <button
-                onClick={() => setData({ ...data, status: 'completo', resultado: undefined })}
+                onClick={pularPerguntas}
                 className="text-gray-500 hover:text-gray-700 text-sm px-4"
               >
                 Pular
@@ -211,10 +219,9 @@ export default function ResultadoPage() {
 
         {/* Métricas */}
         {meta && (
-          <div className="grid grid-cols-4 gap-3 mb-6">
+          <div className="grid grid-cols-3 gap-3 mb-6">
             {[
               { label: 'Sócios', value: meta.socios_count },
-              { label: 'Processos', value: meta.processos_count },
               { label: 'Sanções', value: meta.sancoes_count },
               { label: 'Contratos', value: meta.contratos_count },
             ].map((m) => (

@@ -99,15 +99,14 @@ export default function Home() {
 
       {/* Pillars */}
       <div className="mt-16 w-full max-w-2xl">
-        <p className="text-xs text-gray-500 text-center uppercase tracking-widest mb-5">6 pilares de análise</p>
+        <p className="text-xs text-gray-500 text-center uppercase tracking-widest mb-5">5 pilares de análise</p>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
           {[
             { n: 'P1', t: 'Cadastral', d: 'Situação, CNAE, capital, porte' },
             { n: 'P2', t: 'Tributário', d: 'Simples Nacional, MEI' },
             { n: 'P3', t: 'Integridade', d: 'CEIS/CNEP — sanções' },
-            { n: 'P4', t: 'Judicial', d: 'Processos ativos DataJud' },
-            { n: 'P5', t: 'Operacional', d: 'Contratos públicos' },
-            { n: 'P6', t: 'Rede ★', d: 'Mapeamento societário IA' },
+            { n: 'P4', t: 'Operacional', d: 'Contratos públicos' },
+            { n: 'P5', t: 'Rede ★', d: 'Mapeamento societário IA' },
           ].map((p) => (
             <div key={p.n} className="bg-white/5 border border-white/10 rounded-xl p-3">
               <span className="text-blue-400 text-xs font-bold">{p.n}</span>

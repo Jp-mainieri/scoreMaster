@@ -31,7 +31,6 @@ export interface ScoreContext {
     situacao_especial?: string;
   };
   socios_com_redes: SocioComRede[];
-  processos_count: number;
   sancoes: string;
   contratos_count: number;
   contratos_valor: number;
@@ -73,7 +72,6 @@ PERFIL DOS SÓCIOS E SUAS REDES:
 ${JSON.stringify(ctx.socios_com_redes, null, 2)}
 
 DADOS ADICIONAIS:
-- Processos judiciais ativos: ${ctx.processos_count}
 - Sanções CEIS/CNEP: ${ctx.sancoes}
 - Contratos públicos firmados: ${ctx.contratos_count} (valor total: R$ ${ctx.contratos_valor.toLocaleString('pt-BR')})
 ${ctx.respostas_adicionais ? `- Informações adicionais fornecidas: ${ctx.respostas_adicionais}` : ''}
@@ -87,7 +85,7 @@ INSTRUÇÕES:
    - "concentracao_serial": >7 empresas simultâneas, CNAEs incompatíveis, sem padrão claro
    - "perfil_limpo": poucos vínculos, empresa-alvo como principal, sem situações especiais
 3. Considere o CNAE da empresa avaliada para contextualizar o que é normal ou suspeito.
-4. Se o grau de confiança for < 70%, inclua até 2 perguntas de desambiguação no campo "perguntas_desambiguacao".
+4. Se o grau de confiança for < 70%, inclua até 2 perguntas de desambiguação no campo "perguntas_desambiguacao".${ctx.respostas_adicionais ? '\n5. O usuário já respondeu a uma rodada de perguntas de desambiguação (vide "Informações adicionais fornecidas" acima). NÃO faça novas perguntas — retorne "perguntas_desambiguacao" como array vazio e finalize a análise com a melhor estimativa possível, mesmo que a confiança permaneça abaixo de 70%.' : ''}
 
 RETORNE APENAS O JSON ABAIXO, SEM TEXTO ADICIONAL:
 {

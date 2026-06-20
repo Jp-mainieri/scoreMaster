@@ -2,9 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import type { FornecedorMonitorado } from '@/lib/monitoramento';
+import { WATCHLIST_STORAGE_KEY } from '@/lib/watchlist-storage';
 import AlertaBadge from '@/components/AlertaBadge';
-
-const STORAGE_KEY = 'trustcheck:watchlist';
 
 /* ── Risk palette (same as ScoreCard) ── */
 const RISCO_CONFIG = {
@@ -198,7 +197,7 @@ export default function MonitoramentoPage() {
 
   useEffect(() => {
     try {
-      const salvo = localStorage.getItem(STORAGE_KEY);
+      const salvo = localStorage.getItem(WATCHLIST_STORAGE_KEY);
       if (salvo) setWatchlist(JSON.parse(salvo));
     } catch {
       // localStorage indisponível ou JSON corrompido — segue com watchlist vazia
@@ -209,7 +208,7 @@ export default function MonitoramentoPage() {
 
   useEffect(() => {
     if (!carregado) return; // evita sobrescrever o localStorage com [] antes de carregar
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(watchlist));
+    localStorage.setItem(WATCHLIST_STORAGE_KEY, JSON.stringify(watchlist));
   }, [watchlist, carregado]);
 
   function showToast(msg: string) {

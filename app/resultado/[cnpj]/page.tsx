@@ -7,6 +7,7 @@ import SocioCard from '@/components/SocioCard';
 import LoadingSteps from '@/components/LoadingSteps';
 import RecomendacaoIA from '@/components/RecomendacaoIA';
 import ChecklistPilares from '@/components/ChecklistPilares';
+import { WATCHLIST_STORAGE_KEY } from '@/lib/watchlist-storage';
 
 interface ScoreResult {
   score_final: number;
@@ -69,6 +70,17 @@ export default function ResultadoPage() {
     return () => timers.forEach(clearTimeout);
   }, [cnpj]);
 
+  useEffect(() => {
+    try {
+      const atual: Array<{ cnpj: string }> = JSON.parse(
+        localStorage.getItem(WATCHLIST_STORAGE_KEY) ?? '[]'
+      );
+      if (atual.some((f) => f.cnpj === cnpj)) setMonitorado(true);
+    } catch {
+      // localStorage indisponível — botão segue no estado padrão
+    }
+  }, [cnpj]);
+
   async function fetchScore() {
     try {
       const res = await fetch(`/api/score?cnpj=${cnpj}`);
@@ -86,16 +98,26 @@ export default function ResultadoPage() {
     setMonitorando(true);
     setMonitorarErro('');
     try {
+      const atual: Array<{ cnpj: string }> = JSON.parse(
+        localStorage.getItem(WATCHLIST_STORAGE_KEY) ?? '[]'
+      );
+      if (atual.some((f) => f.cnpj === cnpj)) {
+        setMonitorado(true);
+        return;
+      }
+
       const res = await fetch('/api/monitoramento', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ cnpj }),
       });
-      const json = await res.json();
+      const novo = await res.json();
       if (!res.ok) {
-        setMonitorarErro(json.error ?? 'Erro ao adicionar ao monitoramento.');
+        setMonitorarErro(novo.error ?? 'Erro ao adicionar ao monitoramento.');
         return;
       }
+
+      localStorage.setItem(WATCHLIST_STORAGE_KEY, JSON.stringify([novo, ...atual]));
       setMonitorado(true);
     } catch {
       setMonitorarErro('Erro ao adicionar ao monitoramento. Tente novamente.');
